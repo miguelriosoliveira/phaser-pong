@@ -22,10 +22,8 @@ gulp.task('babel', () => {
 });
 
 gulp.task('copy', function () {
-	return gulp.src('*.html')
-			.pipe(gulp.dest('dist/')) &&
-		gulp.src('js/libs/*.js')
-			.pipe(gulp.dest('dist/js/libs'));
+	gulp.src('assets/*').pipe(gulp.dest('dist/assets/'));
+	return gulp.src('*.html').pipe(gulp.dest('dist/'));
 });
 
 gulp.task('default', ['browser-sync', 'babel', 'copy'], function () {
