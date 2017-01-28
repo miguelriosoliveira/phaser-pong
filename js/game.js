@@ -91,6 +91,20 @@ mainState.prototype = {
 	},
 
 	startDemo: function () {
+		this.resetBall();
+		this.enablePaddles(false);
+		game.input.onDown.add(this.startGame, this);
+	},
+
+	startGame: function () {
+		game.input.onDown.remove(this.startGame, this);
+
+		this.enablePaddles(true);
+		this.resetBall();
+	},
+
+	resetBall: function () {
+		this.ballSprite.reset(game.world.centerX, game.rnd.between(0, gameProperties.screenHeight));
 		this.ballSprite.visible = false;
 		game.time.events.add(Phaser.Timer.SECOND * gameProperties.ballStartDelay, this.startBall, this);
 	},
@@ -101,6 +115,11 @@ mainState.prototype = {
 		let randomAngle = game.rnd.pick(gameProperties.ballRandomStartingAngleRight.concat(gameProperties.ballRandomStartingAngleLeft));
 
 		game.physics.arcade.velocityFromAngle(randomAngle, gameProperties.ballVelocity, this.ballSprite.body.velocity);
+	},
+
+	enablePaddles: function (enabled) {
+		this.paddleLeftSprite.visible = enabled;
+		this.paddleRightSprite.visible = enabled;
 	},
 };
 
