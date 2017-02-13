@@ -6,6 +6,10 @@ const gameProperties = {
 
 	paddleLeft_x: 50,
 	paddleRight_x: 590,
+    paddleVelocity: 600,
+    paddleSegmentsMax: 4,
+    paddleSegmentHeight: 4,
+    paddleSegmentAngle: 15,
 
 	ballVelocity: 500,
 	ballStartDelay: 2,
@@ -40,6 +44,12 @@ let mainState = function (game) {
 	this.ballSprite;
 	this.paddleLeftSprite;
 	this.paddleRightSprite;
+    this.paddleGroup;
+
+    this.paddleLeft_up;
+    this.paddleLeft_down;
+    this.paddleRight_up;
+    this.paddleRight_down;
 };
 mainState.prototype = {
 	preload: function () {
@@ -54,11 +64,14 @@ mainState.prototype = {
 	create: function () {
 		this.initGraphics();
 		this.initPhysics();
+        this.initKeyboard();
 		this.startDemo();
 	},
 
 	update: function () {
-
+        this.moveLeftPaddle();
+        this.moveRightPaddle();
+        game.physics.arcade.overlap(this.ballSprite, this.paddleGroup, this.collidWithPaddle, null, this);
 	},
 
 	initGraphics: function () {
@@ -88,8 +101,27 @@ mainState.prototype = {
 		this.ballSprite.body.collideWorldBounds = true;
 		this.ballSprite.body.immovable = true;
 		this.ballSprite.body.bounce.set(1);
-	},
 
+        this.paddleGroup = game.add.group();
+        this.paddleGroup.enableBody = true;
+        this.paddleGroup.physicsBodyType = Phaser.Physics.ARCADE;
+
+        this.paddleGroup.add(this.paddleLeftSprite);
+        this.paddleGroup.add(this.paddleRightSprite);
+
+        this.paddleGroup.setAll("checkWorldBounds", true);
+        this.paddleGroup.setAll("body.collideWorldBounds", true);
+        this.paddleGroup.setAll("body.immovable", true);
+    },
+
+    initKeyboard: function () {
+        this.paddleLeft_up = game.input.keyboard.addKey(Phaser.keyboard.A);
+        this.paddleLeft_down = game.input.keyboard.addKey(Phaser.keyboard.Z);
+
+        this.paddleRight_up = game.input.keyboard.addKey(Phaser.keyboard.UP);
+        this.paddleRight_down = game.input.keyboard.addKey(Phaser.keyboard.DOWN);
+    },
+	
 	startDemo: function () {
 		this.resetBall();
 		this.enablePaddles(false);
@@ -118,9 +150,56 @@ mainState.prototype = {
 	},
 
 	enablePaddles: function (enabled) {
-		this.paddleLeftSprite.visible = enabled;
-		this.paddleRightSprite.visible = enabled;
-	},
+        this.paddleGroup.setAll("visible", true);
+        this.paddleGroup.setAll("body.enable", true);
+
+        this.paddleLeft_up.enabled = enabled;
+        this.paddleLeft_down.enabled = enabled;
+        this.paddleRight_up.enabled = enabled;
+        this.paddleRight_down.enabled = enabled;
+    },
+
+    moveLeftPaddle: function () {
+        if (this.paddleLeft_up.isDown) {
+            this.paddleLeftSprite.body.velocity.y = -gameProperties.paddleVelocity;
+        } else if (this.paddleLeft_down.isDown) {
+            this.paddleLeftSprite.body.velocity.y = gameProperties.paddleVelocity;
+        } else {
+            this.paddleLeftSprite.body.velocity.y = 0;
+        }
+    },
+
+    moveRightPaddle: function () {
+        if (this.paddleRight_up.isDown) {
+            this.paddleRightSprite.body.velocity.y = -gameProperties.paddleVelocity;
+        } else if (this.paddleRight_down.isDown) {
+            this.paddleRightSprite.body.velocity.y = gameProperties.paddleVelocity;
+        } else {
+            this.paddleRightSprite.body.velocity.y = 0;
+        }
+    },
+
+    collidWithPaddle: function (ball, paddle) {
+        let returnAngle;
+        let segmentHit = Math.floor((ball.y - paddle.y) / gameProperties.paddleSegmentHeight);
+
+        if (segmentHit >= gameProperties.paddleSegmentsMax) {
+            segmentHit = gameProperties.paddleSegmentsMax - 1;
+        } else if (segmentHit <= -gameProperties.paddleSegmentsMax) {
+            segmentHit = -(gameProperties.paddleSegmentsMax - 1);
+        }
+
+        if (paddle.x < gameProperties.screenWidth * .5) {
+            returnAngle = segmentHit * gameProperties.paddleSegmentAngle;
+            game.physics.arcade.velocityFromAngle(returnAngle, gameProperties.ballVelocity, this.ballSprite.body.velocity);
+        } else {
+            returnAngle = 180 - (segmentHit * gameProperties.paddleSegmentAngle);
+            if (returnAngle > 180) {
+                returnAngle -= 360;
+            }
+            game.physics.arcade.velocityFromAngle(returnAngle, gameProperties.ballVelocity, this.ballSprite.body.velocity);
+        }
+    }
 };
 
 let game = new Phaser.Game(gameProperties.screenWidth, gameProperties.screenHeight, Phaser.AUTO, 'gameDiv');
